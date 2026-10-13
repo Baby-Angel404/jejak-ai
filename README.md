@@ -1,0 +1,152 @@
+# Jejak AI
+
+**"Satu prompt, berapa air?"**
+
+Jejak AI mengukur dan menganimasikan jejak **air, listrik, dan data** setiap kali kamu
+mengirim prompt ke provider AI, lalu menampilkannya sebagai satu adegan berpenampang:
+laptop "Kamu", menara listrik, gedung pusat data dengan meteran daya, menara pendingin
+yang mengepulkan uap, gelas ukur 5 mL, dan dua jalur data bawah tanah.
+
+Transparansi adalah aturan mainnya:
+
+| Angka | Status | Sumber |
+|---|---|---|
+| Token | **terukur** | `usage` provider; pendekatan ~4 karakter/token bila provider tidak mengirim usage (ditandai "diperkirakan") |
+| Byte | **terukur** | blok header + body request yang benar-benar dikirim, dan jumlah byte mentah dari chunk respons upstream |
+| Listrik (Wh) | **estimasi** | `(in/1000 × e_in + out/1000 × e_out) × PUE`, selalu tampil bersama rentang 0,4×–3× |
+| Air (mL) | **estimasi** | `energi_Wh × WUE` (L/kWh), selalu tampil bersama rentang 0,4×–3× |
+
+Tidak ada provider yang menerbitkan konsumsi air atau listrik per prompt, jadi angka
+tidak pernah ditampilkan sebagai satu nilai mutlak. Halaman **Metodologi** menjelaskan
+rumus, asumsi, sumber koefisien, dan batasannya.
+
+## Jalankan
+
+```bash
+npm install
+npm run setup          # menyalin server/.env.example -> server/.env
+# isi satu API key di server/.env bila ingin mode nyata
+npm run dev            # backend :8787 + frontend :5173
+```
+
+Buka http://localhost:5173. Tanpa API key apa pun, aplikasi tetap jalan: pilih mode
+**Simulasikan lokal**, yang tidak memanggil provider mana pun.
+
+Perintah lain:
+
+```bash
+npm test               # tes kalkulator + adapter (Vitest, di server)
+npm --workspace client run test   # tes store/laju di client
+npm run typecheck      # server + client
+npm run build          # bundle produksi client
+```
+
+### Mode nyata
+
+Isi `server/.env`, misalnya `OPENAI_API_KEY=sk-...`. Provider yang punya key akan muncul
+otomatis di dropdown. Frontend memanggil `/api/chat` (di-proxy Vite ke backend), sehingga
+**API key tidak pernah masuk ke bundle browser**.
+
+### Coba tanpa API key sungguhan (mock lokal)
+
+```bash
+node server/test/mock-upstream.mjs &
+CUSTOM_BASE_URL=http://localhost:9999/v1 npm run dev:server
+```
+
+## Endpoint
+
+| Method | Path | Fungsi |
+|---|---|---|
+| GET | `/api/health` | status server + provider yang punya key (tanpa nilai key) |
+| POST | `/api/chat` | SSE: `token`, `metrics` (tiap ~80 ms), `usage`, `done`, `error` |
+| POST | `/api/compare` | prompt sama ke 2-3 provider paralel; SSE bertag (`tag` = id provider): `compare-start`, `token`, `metrics`, `done`, `error`, `compare-done` |
+| GET | `/api/history?from&to&provider&limit` | riwayat + total (`from`/`to` dalam ms epoch) |
+| GET | `/api/export.csv`, `/api/export.json` | ekspor riwayat |
+| GET | `/api/coefficients` | koefisien per provider (hanya boolean `hasKey`) |
+| PUT | `/api/coefficients/:provider` | ubah `e_in`, `e_out`, `pue`, `wue`, `sumber`, `tahun` (angka ≥ 0) |
+| POST | `/api/coefficients/reset` | `{ "provider": "openai" }` atau kosong untuk semua |
+
+Event `metrics` membawa delta (`dIn`, `dOut`, `dBytes`, `dWh`, `dMl`), turunan laju
+(`W` watt, `mlPerS`), dan `total`. Adegan memakai `W`, `mlPerS`, dan laju byte/token
+yang dihaluskan — bukan angka acak. Saat tidak ada aktivitas, adegan berhenti total.
+
+## Struktur
+
+```
+client/src/scene      SceneCanvas (loop + smoothing), layout.ts (ilustrasi & tinta), paths.ts, particles.ts, palette.ts
+client/src/receipt    Receipt.tsx (struk: count-up, rentang, setara dengan)
+client/src/state      session.ts, compare.ts, api.ts (SSE), simulate.ts, aggregate.ts, format.ts, useMedia.ts
+client/src/components  PromptForm, Stage, CompareView, MethodPage
+client/src/dashboard  Dashboard.tsx (Recharts), CoefficientsPanel.tsx (editor + reset)
+client/src/i18n       id.ts (bawaan), en.ts, index.tsx (provider)
+server/src/app.ts     createApp() (dipakai juga oleh tes)
+server/src/index.ts   hanya menyalakan server
+server/src/adapters   openaiCompatible.ts, anthropic.ts, index.ts (registri + validasi)
+server/src/routes     chat.ts (runStream), compare.ts, history.ts, coefficients.ts
+server/src/calc       pintu masuk kalkulator (re-export shared/calc)
+server/src/db         SQLite riwayat
+server/config         coefficients.json (aktif) + coefficients.default.json (bawaan)
+server/test           calc.test.ts, adapters.test.ts, routes.test.ts, mock-upstream.mjs
+shared/               types.ts, calc.ts, http.ts (dipakai server dan client)
+```
+
+Matematika kalkulator hanya ada di `shared/calc.ts`, jadi simulasi lokal di browser dan
+server memakai implementasi yang sama persis.
+
+## Menambah provider
+
+1. **API kompatibel OpenAI** (OpenAI, Gemini endpoint `/openai`, Mistral, DeepSeek, Groq,
+   Ollama, vLLM, LM Studio): tambah satu entri di `server/config/coefficients.json` dengan
+   `"kind": "openai-compatible"`, `baseURL`, `keyEnv`, `model`. Selesai.
+2. **API yang berbeda**: buat satu file di `server/src/adapters/` yang mengimplementasikan
+   `Adapter` (`send()` → `AsyncGenerator<StreamChunk>`), lalu daftarkan di `makeAdapter()`
+   di `server/src/adapters/index.ts`.
+
+## Pengujian
+
+```bash
+npm test                            # 30 tes server: kalkulator, adapter, route HTTP (upstream palsu + DB sementara)
+npm --workspace client run test     # 26 tes client: store, agregasi, engine path/partikel
+npm run typecheck                   # server + client
+npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
+```
+
+Tes route menjalankan server Express sungguhan di port acak dengan upstream SSE palsu,
+berkas koefisien sementara (`COEFFICIENTS_FILE`), dan `DATA_DIR` sementara, jadi
+`config/coefficients.json` dan riwayat asli tidak tersentuh.
+
+## Aksesibilitas
+
+- Audit `axe-core` (wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice): **0 pelanggaran**
+  di kelima halaman, tema terang dan gelap, pada 1280 px dan 360 px.
+- Skip link ke konten utama, landmark `<main>`, status adegan diumumkan lewat live region.
+- Tabel riwayat dan koefisien bisa digulir dengan keyboard (`tabindex` + `role="region"`,
+  `<caption>`, `scope="col"`); grafik punya `accessibilityLayer` dan label ringkas.
+- `prefers-reduced-motion`: partikel dan kecepatan dikurangi, count-up dimatikan, adegan
+  tetap informatif (angka tetap tampil, tanpa tween).
+- Kontras teks di atas tinta kuning memakai token `--on-yellow` supaya tetap terbaca di
+  tema gelap.
+
+## Koefisien
+
+Semua nilai bawaan di `server/config/coefficients.json` adalah **ilustrasi** supaya orde
+besarnya masuk akal (sekitar 0,2–3 Wh dan 0,3–beberapa mL air untuk satu prompt wajar),
+bukan angka resmi provider. Ganti dengan riset yang kamu percaya dan isi `sumber`.
+Tombol reset mengembalikan salinan dari `coefficients.default.json`.
+
+## Status pengerjaan
+
+- **Fase 1 (selesai)** — satu provider (mode simulasi lokal), adegan animasi, struk,
+  simulasi lokal tanpa API, i18n id/en, tema terang/gelap, halaman metodologi.
+- **Fase 2 (selesai di sisi server)** — backend proxy, SSE, adapter OpenAI-compatible +
+  Anthropic, pengukuran byte dan token, penyimpanan SQLite, ekspor, editor koefisien
+  lewat API. Frontend sudah=status-realtime ke `/api/chat`.
+- **Fase 3 (selesai)** — mode Bandingkan (2-3 provider paralel, struk berdampingan + grafik
+  batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
+  harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
+  koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
+- **Fase 4 (selesai)** — 30 tes server + 26 tes client, audit axe-core bersih di terang/gelap
+  dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
+  `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
+  dan README ini.
