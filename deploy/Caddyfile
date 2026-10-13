@@ -1,0 +1,37 @@
+# Contoh Caddy: HTTPS otomatis + SSE ke backend Express.
+#
+#   caddy run --config deploy/Caddyfile
+#
+# Sesuaikan nama domain dan path sertifikat. Setelah ini, ARAHKAN FRONTEND ke origin
+# yang sama (tidak ada lagi Vite dev server), dan isi di server/.env:
+#
+#   TRUST_PROXY=2          # jumlah hop: klien -> Caddy -> Express
+#   RATE_LIMIT=30
+#   AUTH_TOKEN=...         # wajib kalau nama domain bukan milik Anda sendiri
+#
+# Caddy tidak menyaring respons, jadi SSE (POST /api/chat) mengalir apa adanya.
+# Pastikan hanya Caddy yang boleh menyentuh Express: HOST tetap 127.0.0.1.
+
+jejak-ai.example.com {
+	encode zstd gzip
+
+	# Jangan pernah membungkus bodi respons; POST /api/chat adalah SSE yang
+	# harus sampai ke browser sedikit demi sedikit.
+	request_body {
+		max_size 2MB
+	}
+
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-Real-IP {remote_host}
+		# Caddy sudah mengisi X-Forwarded-For; Express dijalankan dengan
+		# TRUST_PROXY=<jumlah hop> supaya req.ip mengena ke klien sebenarnya.
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# Aplikasi tidak memuat aset pihak ketiga selain font Google, jadi
+		# Content-Security-Policy sengaja dibuat longgar agar font tetap termuat.
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:"
+	}
+}

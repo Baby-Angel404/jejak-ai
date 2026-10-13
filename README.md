@@ -106,7 +106,7 @@ server memakai implementasi yang sama persis.
 ## Pengujian
 
 ```bash
-npm test                            # 41 tes server: kalkulator, adapter, route HTTP, batas laju & token
+npm test                            # 44 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy
 npm --workspace client run test     # 26 tes client: store, agregasi, engine path/partikel
 npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
@@ -129,6 +129,18 @@ Tes route menjalankan server Express sungguhan di port acak dengan upstream SSE 
 berkas koefisien sementara (`COEFFICIENTS_FILE`), dan `DATA_DIR` sementara, jadi
 `config/coefficients.json` dan riwayat asli tidak tersentuh.
 
+## Deploy di belakang reverse proxy
+
+Contoh konfigurasi ada di `deploy/Caddyfile` (HTTPS otomatis) dan
+`deploy/nginx.conf.example` (TLS diurus terpisah). Dua hal yang wajib benar:
+
+1. **Buffering dimatikan** (`proxy_buffering off`), kalau tidak SSE `/api/chat` ditahan
+   sampai prompt selesai dan adegan kehilangan efek streamingnya.
+2. **`TRUST_PROXY`** diisi sesuai jumlah hop, supaya rate limit menghitung IP klien
+   sebenarnya.
+
+Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapainya.
+
 ## Keamanan bawaan
 
 Server ini memegang API key Anda dan **setiap prompt adalah permintaan berbayar**, jadi:
@@ -141,6 +153,11 @@ Server ini memegang API key Anda dan **setiap prompt adalah permintaan berbayar*
 - `AUTH_TOKEN` opsional: kalau diisi, endpoint kunci menuntut header `x-jejak-token`.
   Token ini sengaja **tidak** dikirim dari browser — token di bundle frontend bukan rahasia
   lagi; biasanya reverse proxy yang menyisipkannya.
+- `TRUST_PROXY` (bawaan **mati**): di belakang reverse proxy, Express memakai
+  `X-Forwarded-For` hanya kalau ini diaktifkan. Tanpanya semua permintaan terlihat dari
+  alamat proxy dan rate limit jadi satu kuota bersama — satu pengguna bisa menghabiskan
+  kuota semua orang. Isi dengan jumlah hop (`1`) atau CIDR proxy Anda, bukan `true`,
+  kecuali memang tidak ada klien tak dipercaya.
 - Kalau berkas koefisien hilang atau rusak, semua endpoint membalas JSON 500 dengan pesan
   yang jelas, bukan menutup koneksi tanpa jawaban (tes: `server/test/security.test.ts`).
 - Browser tidak pernah menerima nilai API key: `/api/coefficients` hanya mengirim boolean
@@ -176,7 +193,7 @@ Tombol reset mengembalikan salinan dari `coefficients.default.json`.
   batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
   harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
   koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
-- **Fase 4 (selesai)** — 41 tes server + 26 tes client, audit axe-core bersih di terang/gelap
+- **Fase 4 (selesai)** — 44 tes server + 26 tes client, audit axe-core bersih di terang/gelap
   dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
   `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
   dan README ini.

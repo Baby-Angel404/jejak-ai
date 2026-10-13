@@ -46,8 +46,26 @@ function safeProviders(): Record<string, ProviderEntry> {
   }
 }
 
+/**
+ * Nilai untuk `app.set('trust proxy')`. Di belakang reverse proxy, Express membaca
+ * `req.ip` dari X-Forwarded-For hanya kalau ini diaktifkan; kalau tidak, semua
+ * permintaan terlihat berasal dari alamat proxy sehingga rate limit dan log menyatu.
+ * Bawaannya DIMATIKAN supaya alamat X-Forwarded-For dari klien tidak bisa dipalsukan.
+ * Bentuk yang diterima: boolean, jumlah hop (number), atau CIDR/ungkapan comma.
+ */
+export function trustProxyFromEnv(): boolean | number | string {
+  const raw = process.env.TRUST_PROXY;
+  if (!raw) return false;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return raw;
+}
+
 export interface AppOptions {
   serveClient?: boolean;
+  /** Diisi = mengabaikan TRUST_PROXY env (dipakai tes). */
+  trustProxy?: boolean | number | string;
   /** null = tanpa batas; kalau diisi, nilai ini mengabaikan RATE_LIMIT */
   rateLimit?: { capacity: number; refillPerSecond: number } | null;
   authToken?: string;
@@ -62,6 +80,9 @@ export function rateLimitFromEnv(): { capacity: number; refillPerSecond: number 
 
 export function createApp(opts: AppOptions = {}) {
   const app = express();
+  const trust = opts.trustProxy ?? trustProxyFromEnv();
+  app.set('trust proxy', trust);
+  app.locals.trustProxy = trust;
   app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }));
   app.use(express.json({ limit: '1mb' }));
 

@@ -179,3 +179,66 @@ describe('konfigurasi rusak tidak menggantungkan klien', () => {
     }
   });
 });
+
+describe('trust proxy dan identitas IP', () => {
+  /** Satu server dengan kapasitas 1: siapa pun yang memakai IP kedua akan mendapat 429. */
+  async function bootLimited(trustProxy: boolean | number | string) {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jejak-proxy-'));
+    const coefFile = path.join(tmpDir, 'coefficients.json');
+    fs.writeFileSync(coefFile, JSON.stringify({
+      uji: { name: 'Uji', kind: 'openai-compatible', baseURL: 'http://127.0.0.1:9/v1', keyEnv: 'UJI_KEY', model: 'uji-1', e_in: 0.05, e_out: 0.5, pue: 1.2, wue: 1.5 },
+    }));
+    process.env.COEFFICIENTS_FILE = coefFile;
+    process.env.DATA_DIR = path.join(tmpDir, 'data');
+    process.env.ENV_FILE = path.join(tmpDir, 'tidak-ada.env');
+    process.env.UJI_KEY = 'k';
+
+    const { createApp } = await import('../src/app');
+    const server = createApp({ trustProxy, rateLimit: { capacity: 1, refillPerSecond: 0.0001 } }).listen(0, '127.0.0.1');
+    await new Promise<void>(r => server.once('listening', r));
+    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    return {
+      from: (ip: string) => fetch(`${url}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+        body: JSON.stringify({ provider: 'uji', messages: [{ role: 'user', content: 'halo' }] }),
+      }),
+      stop: () => { server.close(); fs.rmSync(tmpDir, { recursive: true, force: true }); delete process.env.UJI_KEY; },
+    };
+  }
+
+  it('tanpa trust proxy, X-Forwarded-For diabaikan (satu kubus bersama)', async () => {
+    const s = await bootLimited(false);
+    try {
+      expect((await s.from('10.0.0.1')).status).toBe(200);
+      // Klien kedua mengirim IP berbeda, tapi server tetap melihat alamat proxy:
+      // kuota dipakai bersama. Ini perilaku aman secara bawaan.
+      expect((await s.from('10.0.0.2')).status).toBe(429);
+    } finally {
+      s.stop();
+    }
+  });
+
+  it('dengan trust proxy 1 hop, tiap klien punya kuotanya sendiri', async () => {
+    const s = await bootLimited(1);
+    try {
+      expect((await s.from('10.0.0.1')).status).toBe(200);
+      expect((await s.from('10.0.0.2')).status).toBe(200);   // klien kedua punya kubus sendiri
+      expect((await s.from('10.0.0.1')).status).toBe(429);    // klien pertama tetap kehabisan kuotanya
+    } finally {
+      s.stop();
+    }
+  });
+
+  it('trustProxyFromEnv membaca boolean, hop, dan CIDR', async () => {
+    const { trustProxyFromEnv } = await import('../src/app');
+    const prev = process.env.TRUST_PROXY;
+    delete process.env.TRUST_PROXY;
+    expect(trustProxyFromEnv()).toBe(false);
+    process.env.TRUST_PROXY = 'true'; expect(trustProxyFromEnv()).toBe(true);
+    process.env.TRUST_PROXY = '2';   expect(trustProxyFromEnv()).toBe(2);
+    process.env.TRUST_PROXY = 'loopback, 10.0.0.0/8'; expect(trustProxyFromEnv()).toBe('loopback, 10.0.0.0/8');
+    process.env.TRUST_PROXY = 'false'; expect(trustProxyFromEnv()).toBe(false);
+    if (prev === undefined) delete process.env.TRUST_PROXY; else process.env.TRUST_PROXY = prev;
+  });
+});
