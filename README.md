@@ -112,6 +112,19 @@ npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
 ```
 
+### Mode produksi (satu proses)
+
+```bash
+npm run preview      # = npm run build && npm start
+```
+
+`npm start` menyalakan Express di :8787 dan sekaligus menyajikan `client/dist`
+sebagai SPA dari origin yang sama, jadi tidak ada CORS, tidak ada server kedua, dan SSE
+tetap satu origin. Route `/api/*` selalu menang atas berkas statis; path lain yang tidak
+ada dikembalikan ke `index.html` (fallback SPA). Kalau `client/dist` belum ada, server
+tetap jalan dan hanya/API yang dilayani. Ubah lokasi bundle dengan `CLIENT_DIST`,
+atau matikan perilaku ini dengan `SERVE_CLIENT=0`.
+
 Tes route menjalankan server Express sungguhan di port acak dengan upstream SSE palsu,
 berkas koefisien sementara (`COEFFICIENTS_FILE`), dan `DATA_DIR` sementara, jadi
 `config/coefficients.json` dan riwayat asli tidak tersentuh.

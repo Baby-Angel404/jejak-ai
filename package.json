@@ -3,18 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "description": "Jejak AI -Making the invisible water, electricity, and data cost of a prompt visible. Water and electricity are estimates; tokens and bytes are measured.",
-  "workspaces": ["shared", "server", "client"],
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "dev": "concurrently -n server,client -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "npm --workspace server run dev",
     "dev:client": "npm --workspace client run dev",
     "build": "npm --workspace client run build",
+    "start": "npm --workspace server run start",
+    "preview": "npm run build && npm start",
     "test": "npm --workspace server run test",
     "typecheck": "npm --workspace server run typecheck && npm --workspace client run typecheck"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
   },
-  "engines": { "node": ">=20.11" }
+  "engines": {
+    "node": ">=20.11"
+  }
 }
