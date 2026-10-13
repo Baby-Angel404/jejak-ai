@@ -9,36 +9,44 @@ import type { ProviderEntry } from '../../../shared/types';
 export type { ProviderEntry };
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-/**
- * server/config/coefficients.json. Bisa ditimpa lewat COEF_FILE, dipakai tes
- * untuk memakai berkas koefisien sementara tanpa menyentuh berkas asli.
- */
-export const COEF_PATH = process.env.COEFFICIENTS_FILE
-  ? path.resolve(process.env.COEFFICIENTS_FILE)
-  : path.resolve(dir, '../../config/coefficients.json');
+const DEFAULT_COEF = path.resolve(dir, '../../config/coefficients.json');
 /** Salinan bawaan repositori; tombol "Reset ke default" menyalin ulang file ini. */
-export const COEF_DEFAULT_PATH = path.resolve(dir, '../../config/coefficients.default.json');
+const DEFAULT_COEF_FALLBACK = path.resolve(dir, '../../config/coefficients.default.json');
+
+/**
+ * Lokasi berkas koefisien dibaca tiap akses, bukan sekali saat modul dimuat, supaya
+ * COEFFICIENTS_FILE bisa diganti saat runtime (dipakai tes yang menyalakan lebih dari
+ * satu server dalam satu proses).
+ */
+export function coefPath(): string {
+  return process.env.COEFFICIENTS_FILE ? path.resolve(process.env.COEFFICIENTS_FILE) : DEFAULT_COEF;
+}
+export function coefDefaultPath(): string {
+  return process.env.COEFFICIENTS_DEFAULT_FILE
+    ? path.resolve(process.env.COEFFICIENTS_DEFAULT_FILE)
+    : DEFAULT_COEF_FALLBACK;
+}
 
 function readJson(file: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
 export function loadProviders(): Record<string, ProviderEntry> {
-  const raw = readJson(COEF_PATH);
+  const raw = readJson(coefPath());
   delete raw._catatan;
   return raw as unknown as Record<string, ProviderEntry>;
 }
 
 export function loadDefaults(): Record<string, ProviderEntry> {
-  const raw = readJson(COEF_DEFAULT_PATH);
+  const raw = readJson(coefDefaultPath());
   delete raw._catatan;
   return raw as unknown as Record<string, ProviderEntry>;
 }
 
 export function saveProviders(p: Record<string, ProviderEntry>): void {
-  const raw = readJson(COEF_PATH);
+  const raw = readJson(coefPath());
   const catatan = raw._catatan;
-  fs.writeFileSync(COEF_PATH, JSON.stringify({ ...(catatan ? { _catatan: catatan } : {}), ...p }, null, 2) + '\n');
+  fs.writeFileSync(coefPath(), JSON.stringify({ ...(catatan ? { _catatan: catatan } : {}), ...p }, null, 2) + '\n');
 }
 
 /** Kembalikan koefisien ke bawaan. Tanpa argumen: semua provider. */

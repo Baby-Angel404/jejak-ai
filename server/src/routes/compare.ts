@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { loadProviders, makeAdapter, resolveModel } from '../adapters';
 import { runStream, sseHead, taggedSend, validMessages, type Send } from './chat';
-import type { DoneEvent } from '../../../shared/types';
+import type { DoneEvent, ProviderEntry } from '../../../shared/types';
 
 const MIN = 2;
 const MAX = 3;
@@ -23,7 +23,12 @@ export async function compareRoute(req: Request, res: Response): Promise<void> {
   if (!validMessages([{ role: 'user', content: prompt }])) return void res.status(400).json({ error: 'prompt tidak valid' });
   if (new Set(ids as string[]).size !== ids.length) return void res.status(400).json({ error: 'provider tidak boleh dobel' });
 
-  const all = loadProviders();
+  let all: Record<string, ProviderEntry>;
+  try {
+    all = loadProviders();
+  } catch (e) {
+    return void res.status(500).json({ error: `Gagal membaca berkas koefisien: ${(e as Error).message}` });
+  }
   const picked: { id: string; entry: (typeof all)[string]; model: string }[] = [];
   for (const id of ids as string[]) {
     const entry = all[id];

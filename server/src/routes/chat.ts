@@ -110,8 +110,12 @@ export async function runStream(a: RunArgs): Promise<DoneEvent> {
 /** POST /api/chat  body: { provider, messages, maxTokens? } -> SSE */
 export async function chatRoute(req: Request, res: Response): Promise<void> {
   const { provider, messages, maxTokens } = req.body ?? {};
-  const providers = loadProviders();
-  const p = providers[provider];
+  let p;
+  try {
+    p = loadProviders()[provider];
+  } catch (e) {
+    return void res.status(500).json({ error: `Gagal membaca berkas koefisien: ${(e as Error).message}` });
+  }
   if (!p) return void res.status(400).json({ error: `Provider tidak dikenal: ${provider}` });
   if (!validMessages(messages)) return void res.status(400).json({ error: 'messages tidak valid' });
 

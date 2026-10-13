@@ -106,7 +106,7 @@ server memakai implementasi yang sama persis.
 ## Pengujian
 
 ```bash
-npm test                            # 30 tes server: kalkulator, adapter, route HTTP (upstream palsu + DB sementara)
+npm test                            # 41 tes server: kalkulator, adapter, route HTTP, batas laju & token
 npm --workspace client run test     # 26 tes client: store, agregasi, engine path/partikel
 npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
@@ -128,6 +128,23 @@ atau matikan perilaku ini dengan `SERVE_CLIENT=0`.
 Tes route menjalankan server Express sungguhan di port acak dengan upstream SSE palsu,
 berkas koefisien sementara (`COEFFICIENTS_FILE`), dan `DATA_DIR` sementara, jadi
 `config/coefficients.json` dan riwayat asli tidak tersentuh.
+
+## Keamanan bawaan
+
+Server ini memegang API key Anda dan **setiap prompt adalah permintaan berbayar**, jadi:
+
+- `HOST` bawaan `127.0.0.1`. Server tidak otomatis tersedia di jaringan lain. Ubah ke `0.0.0.0`
+  hanya jika memang perlu, dan server akan mencetak peringatan di log.
+- `RATE_LIMIT` (bawaan 30 permintaan/menit per IP) membatasi `/api/chat` dan `/api/compare`
+  dengan token bucket: jawaban `429` + header `Retry-After`. Set `0` untuk menonaktifkan.
+  Endpoint baca (history, ekspor, koefisien) tidak dibatasi.
+- `AUTH_TOKEN` opsional: kalau diisi, endpoint kunci menuntut header `x-jejak-token`.
+  Token ini sengaja **tidak** dikirim dari browser — token di bundle frontend bukan rahasia
+  lagi; biasanya reverse proxy yang menyisipkannya.
+- Kalau berkas koefisien hilang atau rusak, semua endpoint membalas JSON 500 dengan pesan
+  yang jelas, bukan menutup koneksi tanpa jawaban (tes: `server/test/security.test.ts`).
+- Browser tidak pernah menerima nilai API key: `/api/coefficients` hanya mengirim boolean
+  `hasKey`.
 
 ## Aksesibilitas
 
@@ -159,7 +176,7 @@ Tombol reset mengembalikan salinan dari `coefficients.default.json`.
   batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
   harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
   koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
-- **Fase 4 (selesai)** — 30 tes server + 26 tes client, audit axe-core bersih di terang/gelap
+- **Fase 4 (selesai)** — 41 tes server + 26 tes client, audit axe-core bersih di terang/gelap
   dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
   `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
   dan README ini.
