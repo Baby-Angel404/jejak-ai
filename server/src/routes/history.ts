@@ -14,7 +14,21 @@ export function historyRoute(req: Request, res: Response): void {
 }
 
 const CSV_HEAD = ['ts_iso', 'provider', 'model', 'tokens_in', 'tokens_out', 'tokens_estimated', 'bytes', 'wh_est', 'ml_est'];
-const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+
+/**
+ * Escape nilai sel CSV. Dua lapis:
+ * 1. koma, kutip, dan baris baru -> bungkus tanda kutip;
+ * 2. nilai yang diawali = + - @ (atau tab/CR) akan dieksekusi spreadsheet sebagai
+ *    formula, jadi diberi awalan tanda kutip tunggal.
+ * Nama provider/model berasal dari berkas koefisien, jadi bukan data tepercaya.
+ */
+const esc = (v: string): string => {
+  const formula = /^[=+\-@\t\r]/.test(v);
+  const safe = formula ? `'${v}` : v;
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+
+export { esc as escapeCsvCell };
 
 export function exportCsvRoute(_req: Request, res: Response): void {
   const rows = listRows({}, 5000);

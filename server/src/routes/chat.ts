@@ -23,6 +23,21 @@ export function sseHead(res: Response): void {
 
 export type Send = (event: string, data: unknown) => void;
 
+/**
+ * Komentar heartbeat untuk SSE. Tanpa ini, proxy di depan (nginx, Cloudflare, ...)
+ * bisa memutus koneksi yang tidak membawa data -- padahal stream masih hidup.
+ * Komentar `:` dihitung sebagai baris kosong oleh parser SSE, jadi diabaikan klien.
+ */
+export const HEARTBEAT_MS = 15_000;
+
+export function startHeartbeat(res: Response, ms = HEARTBEAT_MS): () => void {
+  const timer = setInterval(() => {
+    if (!res.writableEnded) res.write(': ping\n\n');
+  }, ms);
+  timer.unref?.();
+  return () => clearInterval(timer);
+}
+
 /** Bungkus event jadi bertag supaya /api/compare bisa melacak provider mana. */
 export function taggedSend(send: Send, tag?: string): Send {
   if (!tag) return send;
@@ -127,6 +142,7 @@ export async function chatRoute(req: Request, res: Response): Promise<void> {
   const send: Send = (event, data) => { res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
   const ac = new AbortController();
   res.on('close', () => ac.abort());
+  const stopHeartbeat = startHeartbeat(res);
 
   try {
     const done = await runStream({ provider, entry: p, messages, maxTokens, signal: ac.signal, send });
@@ -134,6 +150,7 @@ export async function chatRoute(req: Request, res: Response): Promise<void> {
   } catch (e: any) {
     if (!ac.signal.aborted) send('error', { message: e?.message ?? String(e) });
   } finally {
+    stopHeartbeat();
     res.end();
   }
 }

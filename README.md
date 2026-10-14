@@ -106,7 +106,7 @@ server memakai implementasi yang sama persis.
 ## Pengujian
 
 ```bash
-npm test                            # 44 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy
+npm test                            # 47 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy, ekspor
 npm --workspace client run test     # 29 tes client: store, agregasi, engine path/partikel
 npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
@@ -171,6 +171,20 @@ Contoh konfigurasi ada di `deploy/Caddyfile` (HTTPS otomatis) dan
 
 Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapainya.
 
+## Hardening yang sudah ada
+
+- **Ekspor CSV**: nilai yang diawali `=`, `+`, `-`, atau `@` diberi awalan tanda kutip
+  tunggal supaya spreadsheet tidak mengeksekusinya sebagai formula. Nama provider dan
+  model berasal dari berkas koefisien, jadi bukan data tepercaya.
+- **Rentang mengikuti angka yang tampil**: rentang dihitung dari nilai yang sedang
+  dianimasikan, jadi value dan min-maksnya selalu konsisten saat streaming.
+- **SSE memakai heartbeat** (`: ping` tiap 15 detik) supaya proxy di depan tidak memutus
+  koneksi yang sedang diam.
+- **Audit dependensi**: `npm audit` = 0 kerentanan (produksi maupun dev). Vite 6 dan
+  Vitest 4 dipakai karena rantai versi lama membawa advisory pada `tinypool`/`esbuild`
+  di server pengembangan Vite.
+- API key tidak pernah masuk ke respons API maupun bundle frontend.
+
 ## Keamanan bawaan
 
 Server ini memegang API key Anda dan **setiap prompt adalah permintaan berbayar**, jadi:
@@ -223,7 +237,7 @@ Tombol reset mengembalikan salinan dari `coefficients.default.json`.
   batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
   harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
   koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
-- **Fase 4 (selesai)** — 44 tes server + 29 tes client + 24 tes E2E, audit axe-core bersih di terang/gelap
+- **Fase 4 (selesai)** — 47 tes server + 29 tes client + 24 tes E2E, audit axe-core bersih di terang/gelap
   dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
   `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
   dan README ini.

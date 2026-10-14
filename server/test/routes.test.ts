@@ -246,3 +246,56 @@ describe('koefisien', () => {
     expect((await res.json()).error).toMatch(/tidak ada di daftar default/);
   });
 });
+describe('hardening ekspor dan SSE', () => {
+  it('escapeCsvCell menahan formula spreadsheet dan koma', async () => {
+    const { escapeCsvCell } = await import('../src/routes/history');
+
+    // Nilai diawali = + - @ akan dieksekusi spreadsheet sebagai formula, jadi
+    // diberi awalan tanda kutip tunggal. Kalau selnya juga berisi koma atau
+    // kutip, seluruh sel dibungkus tanda kutip (dan kutip di dalamnya digandakan).
+    expect(escapeCsvCell('=1+1')).toBe("'=1+1");
+    expect(escapeCsvCell('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(escapeCsvCell('-2+3')).toBe("'-2+3");
+    expect(escapeCsvCell('+1')).toBe("'+1");
+    expect(escapeCsvCell('=HYPERLINK("http://x","klik")')).toBe('"\'=HYPERLINK(""http://x"",""klik"")"');
+
+    // Nilai biasa tetap polos; koma dan kutip tetap di-escape seperti biasa.
+    expect(escapeCsvCell('gpt-4o')).toBe('gpt-4o');
+    expect(escapeCsvCell('a,b')).toBe('"a,b"');
+    expect(escapeCsvCell('kutip "di dalam"')).toBe('"kutip ""di dalam"""');
+  });
+
+  it('nama model berisi formula tetap aman di CSV yang diunduh', async () => {
+    const Database = (await import('better-sqlite3')).default;
+    const db = new Database(path.join(process.env.DATA_DIR!, 'history.db'));
+    db.prepare(`INSERT INTO prompts (ts,provider,model,tokens_in,tokens_out,tokens_estimated,bytes,wh,ml)
+      VALUES (?,?,?,?,?,?,?,?,?)`).run(Date.now(), 'mock', '=cmd|calc', 1, 2, 0, 3, 0.1, 0.2);
+    db.close();
+
+    const csv = await (await fetch(`${app.url}/api/export.csv`)).text();
+    const baris = csv.trim().split('\n').find(l => l.includes('cmd|calc'));
+    expect(baris, `baris tidak ditemukan di:\n${csv}`).toBeDefined();
+    expect(baris).toContain("'=cmd|calc");            // diawali tanda kutip tunggal
+    expect(baris).not.toMatch(/,=cmd/);                // tidak ada sel formula mentah
+    expect(baris!.split(',')[0]).toMatch(/^\d{4}-\d{2}-\d{2}T/);   // kolom pertama tetap ISO
+  });
+
+  it('heartbeat SSE menulis komentar berkala dan dihentikan setelah selesai', async () => {
+    const { startHeartbeat } = await import('../src/routes/chat');
+    const ditulis: string[] = [];
+    const res = {
+      writableEnded: false,
+      write: (s: string) => { ditulis.push(s); return true; },
+    } as any;
+
+    const stop = startHeartbeat(res, 10);
+    await new Promise(r => setTimeout(r, 45));
+    stop();
+    const jumlah = ditulis.length;
+    expect(jumlah, 'heartbeat harus menulis beberapa kali').toBeGreaterThan(1);
+    expect(ditulis.every(s => s === ': ping\n\n')).toBe(true);   // komentar SSE, bukan event
+
+    await new Promise(r => setTimeout(r, 40));
+    expect(ditulis.length, 'heartbeat harus berhenti setelah dibersihkan').toBe(jumlah);
+  });
+});

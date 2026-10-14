@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import type { SessionState } from '../state/session';
-import { withRange } from '../../../shared/calc';
+import { RANGE } from '../../../shared/calc';
 import { useReducedMotion } from '../state/useMedia';
 import { fmtBytes, fmtMl, fmtSeconds, fmtWh, num } from '../state/format';
 
@@ -69,9 +69,11 @@ export function Receipt({ state }: { state: SessionState }) {
   const sWh = useCountUp(state.sessionTotals.wh + inflight.wh, streaming);
   const sBytes = useCountUp(state.sessionTotals.bytes + inflight.bytes, streaming);
 
-  // Selama streaming angka tengah masih naik, jadi rentangnya ikut dihitung dari nilai berjalan.
-  const mlR = withRange(state.totals.ml);
-  const whR = withRange(state.totals.wh);
+  // Rentang diskalakan dari nilai yang SEDANG ditampilkan, bukan dari nilai akhir.
+  // Kalau rentangnya ikut nilai akhir sementara angkanya masih beranimasi, tampilan
+  // sesaat tidak konsisten: rentang terlihat lebih besar dari angka di sebelahnya.
+  const mlR = { low: ml * RANGE.low, mid: ml, high: ml * RANGE.high };
+  const whR = { low: wh * RANGE.low, mid: wh, high: wh * RANGE.high };
 
   const drops = Math.round(state.totals.ml / 0.05);
   const ledSeconds = state.totals.wh * 360; // 10 W = 10/3600 Wh per detik

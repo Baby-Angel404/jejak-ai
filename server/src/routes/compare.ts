@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { loadProviders, makeAdapter, resolveModel } from '../adapters';
-import { runStream, sseHead, taggedSend, validMessages, type Send } from './chat';
+import { runStream, sseHead, startHeartbeat, taggedSend, validMessages, type Send } from './chat';
 import type { DoneEvent, ProviderEntry } from '../../../shared/types';
 
 const MIN = 2;
@@ -43,6 +43,7 @@ export async function compareRoute(req: Request, res: Response): Promise<void> {
   res.on('close', () => ac.abort());
 
   send('compare-start', { items: picked.map(p => ({ tag: p.id, name: p.entry.name, model: p.model })) });
+  const stopHeartbeat = startHeartbeat(res);
 
   const results: { tag: string; done?: DoneEvent; error?: string }[] = [];
   // Semua provider jalan bersamaan: satu lambat tidak menahan yang lain.
@@ -63,5 +64,6 @@ export async function compareRoute(req: Request, res: Response): Promise<void> {
   }));
 
   send('compare-done', { results });
+  stopHeartbeat();
   res.end();
 }
