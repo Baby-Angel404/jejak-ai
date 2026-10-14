@@ -50,6 +50,8 @@ type Listener = () => void;
 class SessionStore {
   private state: SessionState = EMPTY;
   private listeners = new Set<Listener>();
+  /** true setelah stop() sampai prompt berikutnya dimulai. */
+  private stopped = false;
 
   getState = (): SessionState => this.state;
 
@@ -66,6 +68,7 @@ class SessionStore {
   setMode(mode: Mode) { this.set({ mode }); }
 
   begin(provider: string, model: string, mode: Mode) {
+    this.stopped = false;
     this.set({
       status: 'streaming', mode, provider, model,
       text: '', error: undefined, tokensEstimated: true,
@@ -78,6 +81,7 @@ class SessionStore {
   appendToken(delta: string) { this.set({ text: this.state.text + delta }); }
 
   applyMetrics(m: MetricsEvent, dtS: number) {
+    if (this.stopped) return;
     const r = ratesFrom(m, dtS);
     // Total bersifat monoton: sekali naik tidak boleh turun, walau ada tick yang
     // datang tidak berurutan atauhasil hitungan yang berbasis pendekatan.
@@ -120,10 +124,19 @@ class SessionStore {
     });
   }
 
-  /** Berhenti di tengah jalan: angka terakhir tetap tampil, adegan kembali diam. */
-  stop() { this.set({ status: 'idle', instant: { W: 0, mlPerS: 0, bytePerS: 0, tokPerS: 0 } }); }
+  /**
+   * Berhenti di tengah jalan. Setelah ini, metrics yang terlambat (satu tick terakhir
+   * yang sudah ada di antrean, atau potongan SSE yang keluar setelah abort) diabaikan:
+   * kalau tidak, `instant` terisi lagi oleh nilai non-nol dan adegan tidak pernah diam.
+   */
+  stop() {
+    this.stopped = true;
+    this.set({ status: 'idle', instant: { W: 0, mlPerS: 0, bytePerS: 0, tokPerS: 0 } });
+  }
 
-  fail(message: string) { this.set({ status: 'error', error: message, instant: { W: 0, mlPerS: 0, bytePerS: 0, tokPerS: 0 } }); }
+  fail(message: string) {
+    this.stopped = true;
+    this.set({ status: 'error', error: message, instant: { W: 0, mlPerS: 0, bytePerS: 0, tokPerS: 0 } }); }
 
   reset() { this.set({ ...EMPTY, mode: this.state.mode }); }
 }

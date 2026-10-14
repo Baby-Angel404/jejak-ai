@@ -107,10 +107,30 @@ server memakai implementasi yang sama persis.
 
 ```bash
 npm test                            # 44 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy
-npm --workspace client run test     # 26 tes client: store, agregasi, engine path/partikel
+npm --workspace client run test     # 29 tes client: store, agregasi, engine path/partikel
 npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
+npm run test:e2e                    # 16 tes browser (butuh npm run build lebih dulu)
+npm run test:all                    # semua berurutan: typecheck -> unit -> build -> e2e
 ```
+
+### E2E
+
+`npm run test:e2e` menjalankan Chromium (Playwright) terhadap **build produksi** yang
+dilayani Express di satu origin — persis yang akan dikirim, bukan dev server. Yang
+diperiksa: adegan benar-benar diam saat idle dan bergerak saat streaming, struk selalu
+menampilkan rentang untuk air dan listrik, navigasi lima halaman, persistensi bahasa dan
+tema, tanpa scroll horizontal di 360 px, skip link, dasbor membaca database (total,
+tren, filter provider), dan ekspor CSV/JSON.
+
+- Browser: `npx playwright install chromium`. `@playwright/test` dikunci ke 1.63.0 yang
+  memakai chromium-1243, jadi instalasi lokal tidak mengunduh apa pun kalau browser
+  sudah ada di `~/.cache/ms-playwright`.
+- Database E2E ditulis ke direktori sementara (`DATA_DIR`), bukan `server/data/`.
+- Mode simulasi lokal tidak menulis riwayat, jadi data dasbor diisi langsung ke database
+  E2E oleh tes. Batas laju diuji di `server/test/security.test.ts`, bukan di sini.
+- GitHub Actions (`.github/workflows/ci.yml`) menjalankan typecheck, tes unit, build, dan
+  E2E pada setiap push dan pull request.
 
 ### Mode produksi (satu proses)
 
@@ -193,7 +213,7 @@ Tombol reset mengembalikan salinan dari `coefficients.default.json`.
   batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
   harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
   koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
-- **Fase 4 (selesai)** — 44 tes server + 26 tes client, audit axe-core bersih di terang/gelap
+- **Fase 4 (selesai)** — 44 tes server + 29 tes client + 16 tes E2E, audit axe-core bersih di terang/gelap
   dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
   `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
   dan README ini.

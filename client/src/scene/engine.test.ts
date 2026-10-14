@@ -102,15 +102,25 @@ describe('partikel', () => {
 
   it('partikel hilang setelah melewati ujung path', () => {
     const ch = createChannel(straight, opts);
-    ch.particles.push({ d: 80, size: 4, seed: 0 });
-    // Intensitas 0: tidak ada spawn baru, tapi partikel yang ada tetap bergerak
-    // (35 px/detik = 3,5 px per tick 100 ms).
-    stepChannel(ch, 0.1, 0);
+    ch.particles.push({ d: 10, size: 4, seed: 0 });
+    stepChannel(ch, 0.05, 0);
     expect(ch.particles).toHaveLength(1);
-    expect(ch.particles[0].d).toBeCloseTo(83.5, 6);
+    expect(ch.particles[0].d).toBeGreaterThan(10);
 
-    for (let i = 0; i < 10 && ch.particles.length > 0; i++) stepChannel(ch, 0.1, 0);
+    for (let i = 0; i < 20 && ch.particles.length > 0; i++) stepChannel(ch, 0.05, 0);
     expect(ch.particles).toHaveLength(0);
+  });
+
+  it('sisa partikel habis dalam waktu singkat setelah aktivitas berhenti', () => {
+    // Panjang dan kecepatan mencerminkan geometri adegan sungguhan (jalur data ~450 px, laju ~150 px/s).
+    const jalur = buildPath([{ x: 0, y: 0 }, { x: 450, y: 0 }]);
+    const ch = createChannel(jalur, { rate: 7, speed: 150, size: 12, max: 30 });
+    for (let i = 0; i < 20; i++) ch.particles.push({ d: i * 22, size: 12, seed: 0 });
+
+    let detik = 0;
+    while (ch.particles.length > 0 && detik < 3) { stepChannel(ch, 0.1, 0); detik += 0.1; }
+    expect(ch.particles, 'partikel sisa harus habis').toHaveLength(0);
+    expect(detik, 'adegan harus diam dalam ~2 detik setelah berhenti').toBeLessThan(2);
   });
 
   it('sizeOf dipakai untuk ukuran partikel, speedScale memperlambat', () => {

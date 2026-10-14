@@ -34,10 +34,21 @@ export function createChannel(path: Path, opts: ChannelOpts): Channel {
   return { path, particles: [], opts, acc: 0 };
 }
 
-/** Majukan satu channel. intensity 0 = tidak ada spawn baru dan partikel lama habis. */
+/** Di bawah intensitas ini aktivitas dianggap selesai. */
+export const IDLE_THRESHOLD = 0.02;
+/** Pengali kecepatan untuk sisa partikel setelah aktivitas berhenti. */
+const IDLE_SPEED_UP = 6;
+
+/**
+ * Majukan satu channel. intensity 0 = tidak ada spawn baru dan partikel lama habis.
+ *
+ * Uap atau paket yang tersisa tidak boleh merayap: tanpa aktivitas baru, adegan
+ * harus terasa berhenti dalam ~2 detik. Jadi partikel yang tersisa diberi
+ * kecepatan tinggi supaya habis di ujung path.
+ */
 export function stepChannel(ch: Channel, dt: number, intensity: number, sizeOf?: () => number, speedScale = 1): void {
   const { rate, speed, size, max } = ch.opts;
-  if (intensity > 0.001 && rate > 0) {
+  if (intensity > IDLE_THRESHOLD && rate > 0) {
     ch.acc += rate * intensity * dt;
     let guard = 0;
     while (ch.acc >= 1 && ch.particles.length < max && guard++ < 40) {
@@ -47,7 +58,8 @@ export function stepChannel(ch: Channel, dt: number, intensity: number, sizeOf?:
     if (ch.acc > 2) ch.acc = 2;
   }
 
-  const v = speed * speedScale * (0.35 + 0.65 * Math.min(1, intensity));
+  const idle = intensity <= IDLE_THRESHOLD;
+  const v = speed * speedScale * (idle ? IDLE_SPEED_UP : 0.35 + 0.65 * Math.min(1, intensity));
   for (let i = ch.particles.length - 1; i >= 0; i--) {
     const p = ch.particles[i];
     p.d += v * dt;

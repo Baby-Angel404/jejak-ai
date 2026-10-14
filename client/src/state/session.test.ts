@@ -47,6 +47,36 @@ describe('sessionStore', () => {
     expect(s.instant.W).toBe(0); // setelah selesai, adegan kembali diam
   });
 
+  it('metrics yang terlambat setelah stop diabaikan (adegan harus kembali diam)', () => {
+    sessionStore.begin('simulasi lokal', 'simulasi', 'simulasi');
+    sessionStore.applyMetrics({
+      dIn: 1, dOut: 1, dBytes: 10, dWh: 0, dMl: 0, W: 50, mlPerS: 0.02,
+      total: { tokensIn: 2, tokensOut: 2, wh: 0, ml: 0, bytes: 10 },
+    }, 0.08);
+    sessionStore.stop();
+
+    // Satu tick terakhir bisa tiba setelah tombol Hentikan ditekan.
+    sessionStore.applyMetrics({
+      dIn: 1, dOut: 1, dBytes: 10, dWh: 0, dMl: 0, W: 116, mlPerS: 0.05,
+      total: { tokensIn: 3, tokensOut: 3, wh: 0, ml: 0, bytes: 20 },
+    }, 0.08);
+
+    const s = sessionStore.getState();
+    expect(s.instant).toEqual({ W: 0, mlPerS: 0, bytePerS: 0, tokPerS: 0 });
+    expect(s.totals.tokensOut).toBe(2);      // total juga tidak boleh naik lagi
+    expect(s.status).toBe('idle');
+  });
+
+  it('prompt berikutnya menghapus penanda stop', () => {
+    sessionStore.stop();
+    sessionStore.begin('p', 'm', 'simulasi');
+    sessionStore.applyMetrics({
+      dIn: 1, dOut: 1, dBytes: 10, dWh: 0, dMl: 0, W: 42, mlPerS: 0.02,
+      total: { tokensIn: 1, tokensOut: 1, wh: 0, ml: 0, bytes: 10 },
+    }, 0.08);
+    expect(sessionStore.getState().instant.W).toBe(42);
+  });
+
   it('stop mengembalikan status idle dan menolokkan laju', () => {
     sessionStore.applyMetrics({
       dIn: 1, dOut: 1, dBytes: 10, dWh: 0, dMl: 0, W: 50, mlPerS: 0.02,

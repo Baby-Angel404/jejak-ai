@@ -3,4 +3,7 @@ dist/
 server/.env
 server/data/
 *.local
+test-results/
+playwright-report/
+blob-report/
 .DS_Store

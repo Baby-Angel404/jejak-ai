@@ -17,9 +17,14 @@
     "start": "npm --workspace server run start",
     "preview": "npm run build && npm start",
     "test": "npm --workspace server run test",
-    "typecheck": "npm --workspace server run typecheck && npm --workspace client run typecheck"
+    "typecheck": "npm --workspace server run typecheck && npm --workspace client run typecheck",
+    "test:e2e": "playwright test",
+    "test:e2e:server": "npm --workspace server run start",
+    "test:all": "npm run typecheck && npm test && npm --workspace client run test && npm run build && npm run test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "better-sqlite3": "^11.10.0",
     "concurrently": "^9.1.0"
   },
   "engines": {

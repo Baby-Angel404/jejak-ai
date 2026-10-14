@@ -91,6 +91,9 @@ export async function simulateChat(
   for (const piece of pieces) {
     if (opts.signal.aborted) return;
     await new Promise(r => setTimeout(r, jitter(26, 48)));
+    // Dicek lagi setelah tidur: pengguna bisa menekan Hentikan selama jeda ini, dan
+    // token/metrik yang terlanjur ditulis akan membuat adegan tetap hidup.
+    if (opts.signal.aborted) return;
     charsOut += piece.length;
 
     // Byte respons: ukuran frame SSE yang benar-benar kita hasilkan.
