@@ -190,6 +190,18 @@ Contoh konfigurasi ada di `deploy/Caddyfile` (HTTPS otomatis) dan
 
 Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapainya.
 
+## Versi dan alasan naik/tahan
+
+| Paket | Versi | Catatan |
+|---|---|---|
+| Express | 5.3 | Sudah dimigrasi; fallback SPA memakai RegExp, bukan `'*'`, karena path-to-regexp v8 tidak menerima wildcard telanjang. |
+| better-sqlite3 | 11 | **Ditahan di 11**: versi 13 mensyaratkan Node ≥ 22. Di Node 20 binary prebuilt-nya segfault saat database dibuka (diuji langsung, bukan dari laporan orang lain). Naik ke 11→13 setelah Node dinaikkan ke 22. |
+| Vite / Vitest | 6 / 4 | Vite 8 dan Vitest 5 membuat typecheck gagal (aturan import CSS di TypeScript 7). |
+| React / Recharts | 18 / 2 | React 19 dan Recharts 3 membuat build dan tes client gagal; perlu migrasi komponen grafik. |
+
+Dependabot hanya menaikkan minor/patch; alasan setiap penahanan ada di
+`.github/dependabot.yml`.
+
 ## Hardening yang sudah ada
 
 - **Ekspor CSV**: nilai yang diawali `=`, `+`, `-`, atau `@` diberi awalan tanda kutip

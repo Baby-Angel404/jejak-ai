@@ -27,9 +27,11 @@ updates:
           - 'react-dom'
           - 'recharts'
           - '@vitejs/plugin-react'
-    # Lonjakan mayor ditolak otomatis. Alasannya diuji lokal, bukan tebakan:
-    #   express 4->5, better-sqlite3 11->13   -> tes server gagal
-    #   typescript 5->7, vite 6->8, vitest 4->5 -> typecheck gagal
+    # Lonjakan mayor ditolak otomatis. Alasannya diuji di mesin ini, bukan tebakan:
+    #   express 4->5                     -> sudah dimigrasi (lihat riwayat git)
+    #   better-sqlite3 11->13            -> mensyaratkan Node >= 22; di Node 20
+    #                                       binary prebuilt segfault saat DB dibuka
+    #   typescript 5->7, vite 6->8, vitest 4->5 -> typecheck gagal (aturan import CSS)
     #   react 18->19, recharts 2->3            -> build dan tes client gagal
     # Upgrade mayor adalah pekerjaan migrasi tersendiri, bukan-PR otomatis.
     # Kalau salah satu sudah selesai di tangan, hapus baris ignore-nya.
