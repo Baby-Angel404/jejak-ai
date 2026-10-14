@@ -83,20 +83,28 @@ yang dihaluskan — bukan angka acak. Saat tidak ada aktivitas, adegan berhenti 
 
 ```
 client/src/scene      SceneCanvas (loop + smoothing), layout.ts (ilustrasi & tinta), paths.ts, particles.ts, palette.ts
+                     + engine.test.ts (path, partikel, batas laju partikel)
 client/src/receipt    Receipt.tsx (struk: count-up, rentang, setara dengan)
 client/src/state      session.ts, compare.ts, api.ts (SSE), simulate.ts, aggregate.ts, format.ts, useMedia.ts
+                     + session.test.ts, aggregate.test.ts
 client/src/components  PromptForm, Stage, CompareView, MethodPage
 client/src/dashboard  Dashboard.tsx (Recharts), CoefficientsPanel.tsx (editor + reset)
 client/src/i18n       id.ts (bawaan), en.ts, index.tsx (provider)
+client/src/styles     base.css (token & tombol cetak), components.css
 server/src/app.ts     createApp() (dipakai juga oleh tes)
 server/src/index.ts   hanya menyalakan server
+server/src/security.ts token bucket (rate limit) + AUTH_TOKEN
 server/src/adapters   openaiCompatible.ts, anthropic.ts, index.ts (registri + validasi)
-server/src/routes     chat.ts (runStream), compare.ts, history.ts, coefficients.ts
+server/src/routes     chat.ts (runStream + heartbeat), compare.ts, history.ts, coefficients.ts
 server/src/calc       pintu masuk kalkulator (re-export shared/calc)
 server/src/db         SQLite riwayat
 server/config         coefficients.json (aktif) + coefficients.default.json (bawaan)
-server/test           calc.test.ts, adapters.test.ts, routes.test.ts, mock-upstream.mjs
+server/test           calc.test.ts, adapters.test.ts, routes.test.ts, security.test.ts, mock-upstream.mjs
 shared/               types.ts, calc.ts, http.ts (dipakai server dan client)
+e2e/                  app.spec.ts (UI), live.spec.ts (mode nyata), fixtures/coefficients.json
+deploy/               Caddyfile, nginx.conf.example (proxy + SSE + TLS)
+scripts/              setup.mjs, dev-mock.mjs, publish.mjs
+.github/workflows/    ci.yml (typecheck, unit, audit, build, E2E, gitleaks)
 ```
 
 Matematika kalkulator hanya ada di `shared/calc.ts`, jadi simulasi lokal di browser dan
@@ -227,7 +235,10 @@ ditemukan pola secret di working tree (dicek terhadap 74 berkas sebelum push).
 Kalau `gh` belum ada, buat repo kosong lewat browser (pilih **Private**), lalu jalankan
 perintah `--remote-only` di atas.
 
-## Kalau token atau API key pernah bocor
+## Melaporkan kerentanan
+
+Lihat [SECURITY.md](SECURITY.md): laporkan lewat Security Advisory repo (privat),
+jangan lewat issue publik. Dependensi dipantau Dependabot dan diaudit di setiap run CI.
 
 Cabut seketika di GitHub (Settings → Developer settings → Personal access tokens) dan
 buat yang baru. Token yang pernah ditempel di chat, issue, atau log dianggap bocor,

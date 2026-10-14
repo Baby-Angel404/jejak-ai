@@ -1,0 +1,37 @@
+version: 2
+
+# Dependensi dipantau otomatis: advisory keamanan memicu PR, bukan dibiarkan
+# membusuk diam-diam. Audit juga berjalan di CI sebagai gerbang.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Server-side (Express, SQLite) dan alat build bisa naik bersama.
+      server:
+        patterns:
+          - 'express'
+          - 'better-sqlite3'
+          - 'cors'
+          - 'dotenv'
+      toolchain:
+        patterns:
+          - 'vite'
+          - 'vitest'
+          - '@playwright/test'
+          - 'typescript'
+      frontend:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - 'recharts'
+          - '@vitejs/plugin-react'
+    # Hanya patch dan minor; mayor bisa mengubah perilaku, jadi diperiksa manual.
+    versioning-strategy: increase-if-necessary
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
