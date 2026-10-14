@@ -9,7 +9,6 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      # Server-side (Express, SQLite) dan alat build bisa naik bersama.
       server:
         patterns:
           - 'express'
@@ -28,10 +27,26 @@ updates:
           - 'react-dom'
           - 'recharts'
           - '@vitejs/plugin-react'
-    # Hanya patch dan minor; mayor bisa mengubah perilaku, jadi diperiksa manual.
-    versioning-strategy: increase-if-necessary
+    # Lonjakan mayor ditolak otomatis. Alasannya diuji lokal, bukan tebakan:
+    #   express 4->5, better-sqlite3 11->13   -> tes server gagal
+    #   typescript 5->7, vite 6->8, vitest 4->5 -> typecheck gagal
+    #   react 18->19, recharts 2->3            -> build dan tes client gagal
+    # Upgrade mayor adalah pekerjaan migrasi tersendiri, bukan-PR otomatis.
+    # Kalau salah satu sudah selesai di tangan, hapus baris ignore-nya.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # Lonjakan mayor actions (v4 -> v7) dihentikan agar datangnya satu per satu;
+      # PR-nya sendiri sudah diuji dan hijau, jadi bisa levantamento manual.
+      - dependency-name: 'actions/checkout'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'actions/setup-node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'actions/upload-artifact'
+        update-types: ['version-update:semver-major']
