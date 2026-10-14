@@ -192,6 +192,23 @@ Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapa
   di server pengembangan Vite.
 - API key tidak pernah masuk ke respons API maupun bundle frontend.
 
+## Menerbitkan ke GitHub
+
+Repo ini **tidak pernah menerima token sebagai argumen**. Login selalu lewat `gh auth login`
+atau lewat kredensial yang diminta `git push` secara interaktif.
+
+```bash
+node scripts/publish.mjs                 # buat repo privat lalu push
+node scripts/publish.mjs --public        # repo publik (sengaja)
+node scripts/publish.mjs --remote-only https://github.com/<user>/jejak-ai.git   # repo sudah dibuat manual
+```
+
+Skrip ini menolak jalan kalau working tree belum bersih, `gh` belum terautentikasi, atau
+ditemukan pola secret di working tree (dicek terhadap 74 berkas sebelum push).
+
+Kalau `gh` belum ada, buat repo kosong lewat browser (pilih **Private**), lalu jalankan
+perintah `--remote-only` di atas.
+
 ## Kalau token atau API key pernah bocor
 
 Cabut seketika di GitHub (Settings → Developer settings → Personal access tokens) dan
