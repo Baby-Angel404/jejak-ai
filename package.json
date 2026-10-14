@@ -26,7 +26,8 @@
     "test:all": "npm run typecheck && npm test && npm --workspace client run test && npm run build && npm run test:e2e"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^20.19.43",
     "better-sqlite3": "^11.10.0",
     "concurrently": "^9.1.0"
   },

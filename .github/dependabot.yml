@@ -31,7 +31,10 @@ updates:
     #   express 4->5                     -> sudah dimigrasi (lihat riwayat git)
     #   better-sqlite3 11->13            -> mensyaratkan Node >= 22; di Node 20
     #                                       binary prebuilt segfault saat DB dibuka
-    #   typescript 5->7, vite 6->8, vitest 4->5 -> typecheck gagal (aturan import CSS)
+    #   typescript 7, vitest 5 -> sudah dimigrasi (lihat riwayat git)
+    #   vite 6->8 -> DITAHAN: bundler rolldown butuh binding native yang tidak
+    #                  dipasang npm ci di Linux, jadi build rusak di mesin lain
+    #   react 18->19, recharts 2->3 -> build dan tes client gagal
     #   react 18->19, recharts 2->3            -> build dan tes client gagal
     # Upgrade mayor adalah pekerjaan migrasi tersendiri, bukan-PR otomatis.
     # Kalau salah satu sudah selesai di tangan, hapus baris ignore-nya.

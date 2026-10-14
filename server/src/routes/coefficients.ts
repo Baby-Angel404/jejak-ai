@@ -1,6 +1,15 @@
 import type { Request, Response } from 'express';
 import { loadProviders, saveProviders, resetProviders, validateCoefficients, hasKey, resolveModel } from '../adapters';
 
+/**
+ * Express 5 (path-to-regexp v8) menyatakan req.params bisa string ATAU array.
+ * Ambil nilai pertama supaya pemanggil route selalu dapat string biasa.
+ */
+function pertama(v: unknown): string {
+  const x = Array.isArray(v) ? v[0] : v;
+  return typeof x === 'string' ? x : '';
+}
+
 export function getCoefficientsRoute(_req: Request, res: Response): void {
   const out = Object.fromEntries(
     Object.entries(loadProviders()).map(([id, v]) => [id, {
@@ -19,7 +28,7 @@ export function getCoefficientsRoute(_req: Request, res: Response): void {
 
 export function putCoefficientsRoute(req: Request, res: Response): void {
   const all = loadProviders();
-  const id = req.params.provider;
+  const id = pertama(req.params.provider);
   const cur = all[id];
   if (!cur) return void res.status(404).json({ error: 'Provider tidak ada' });
   let patch;
@@ -32,7 +41,7 @@ export function putCoefficientsRoute(req: Request, res: Response): void {
 }
 
 export function resetCoefficientsRoute(req: Request, res: Response): void {
-  const provider = (req.body?.provider ?? req.query.provider) as string | undefined;
+  const provider = pertama(req.body?.provider ?? req.query.provider) || undefined;
   try {
     const all = resetProviders(provider);
     const one = provider ? all[provider] : undefined;
