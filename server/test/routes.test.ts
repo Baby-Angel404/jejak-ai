@@ -299,3 +299,21 @@ describe('hardening ekspor dan SSE', () => {
     expect(ditulis.length, 'heartbeat harus berhenti setelah dibersihkan').toBe(jumlah);
   });
 });
+
+describe('model yang ditampilkan sudah diresolusi', () => {
+  it('/api/coefficients mengirim model efektif, bukan nilai mentah "env:..."', async () => {
+    process.env.CUSTOM_MODEL = 'model-dari-env';
+    fs.writeFileSync(process.env.COEFFICIENTS_FILE!, JSON.stringify({
+      custom: { name: 'Custom', kind: 'openai-compatible', baseURL: 'http://127.0.0.1:9/v1', keyEnv: 'CUSTOM_KEY', model: 'env:CUSTOM_MODEL', e_in: 0.05, e_out: 0.5, pue: 1.2, wue: 1.5 },
+    }));
+    process.env.CUSTOM_KEY = 'k';
+    try {
+      const json = await (await fetch(`${app.url}/api/coefficients`)).json();
+      expect(json.custom.model).toBe('model-dari-env');   // yang benar-benar dipakai
+      expect(json.custom.modelRaw).toBe('env:CUSTOM_MODEL');  // nilai mentah tetap tersedia
+    } finally {
+      delete process.env.CUSTOM_KEY;
+      delete process.env.CUSTOM_MODEL;
+    }
+  });
+});

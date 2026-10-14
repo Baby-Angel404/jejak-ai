@@ -47,12 +47,16 @@ Isi `server/.env`, misalnya `OPENAI_API_KEY=sk-...`. Provider yang punya key aka
 otomatis di dropdown. Frontend memanggil `/api/chat` (di-proxy Vite ke backend), sehingga
 **API key tidak pernah masuk ke bundle browser**.
 
-### Coba tanpa API key sungguhan (mock lokal)
+### Coba mode nyata tanpa API key sungguhan
 
 ```bash
-node server/test/mock-upstream.mjs &
-CUSTOM_BASE_URL=http://localhost:9999/v1 npm run dev:server
+npm run dev:mock
 ```
+
+Menjalankan tiga hal sekaligus: mock upstream yang bicara OpenAI-compatible,
+backend yang diarahkan ke mock itu (`CUSTOM_BASE_URL` + `Kunci API` palsu), dan
+server dev Vite. Buka http://localhost:5173, pilih mode **Kirim prompt**, lalu provider
+**Custom**. Tidak ada API key sungguhan yang dipakai, dan `Ctrl+C` menutup ketiganya.
 
 ## Endpoint
 
@@ -106,12 +110,14 @@ server memakai implementasi yang sama persis.
 ## Pengujian
 
 ```bash
-npm test                            # 47 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy, ekspor
+npm test                            # 48 tes server: kalkulator, adapter, route HTTP, batas laju, token, trust proxy, ekspor
 npm --workspace client run test     # 29 tes client: store, agregasi, engine path/partikel
 npm run typecheck                   # server + client
 npm run build                       # bundle produksi (Recharts dipecah jadi chunk sendiri)
 npm run test:e2e                    # 24 tes browser (butuh npm run build lebih dulu)
 npm run test:all                    # semua berurutan: typecheck -> unit -> build -> e2e
+npm run verify                      # test:all + audit dependensi (satu cek untuk seluruh proyek)
+npm run dev:mock                    # mode nyata melawan mock lokal, tanpa API key
 ```
 
 ### E2E
@@ -237,7 +243,7 @@ Tombol reset mengembalikan salinan dari `coefficients.default.json`.
   batang air/listrik/data, jalur yang difokuskan menggerakkan adegan), Dasbor (total
   harian/mingguan/bulanan, tren Recharts, tabel riwayat, ekspor CSV/JSON), dan editor
   koefisien per provider dengan grafik "air per 1.000 token keluaran" plus tombol reset.
-- **Fase 4 (selesai)** — 47 tes server + 29 tes client + 24 tes E2E, audit axe-core bersih di terang/gelap
+- **Fase 4 (selesai)** — 48 tes server + 29 tes client + 24 tes E2E, audit axe-core bersih di terang/gelap
   dan 1280/360 px, skip link, live region, tabel bergulir yang bisa diakses keyboard,
   `prefers-reduced-motion` (termasuk count-up), kontras tema gelap, code-split Recharts,
   dan README ini.

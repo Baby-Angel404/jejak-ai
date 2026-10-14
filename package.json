@@ -14,6 +14,8 @@
     "dev": "concurrently -n server,client -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "npm --workspace server run dev",
     "dev:client": "npm --workspace client run dev",
+    "dev:mock": "node scripts/dev-mock.mjs",
+    "verify": "npm run typecheck && npm test && npm --workspace client run test && npm run build && npm run test:e2e && npm audit --audit-level=high",
     "build": "npm --workspace client run build",
     "start": "npm --workspace server run start",
     "preview": "npm run build && npm start",
