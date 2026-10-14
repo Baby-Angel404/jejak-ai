@@ -3,7 +3,7 @@ import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 
 import type { ProviderEntry } from '../../../shared/types';
 import { useI18n } from '../i18n';
 import { fetchProviders } from '../state/coefficients';
-import { num, type Loc } from '../state/format';
+import { num, tooltipFormatter, type Loc } from '../state/format';
 import { waterPer1kOut } from '../state/aggregate';
 
 const INKS = ['var(--blue)', 'var(--pink)', 'var(--yellow)'];
@@ -119,7 +119,7 @@ export function CoefficientsPanel() {
               <BarChart accessibilityLayer data={chart} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
                 <YAxis width={46} tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
-                <Tooltip cursor={{ fill: 'var(--rule)' }} formatter={(v: number) => [`${num(loc, Number(v), 3)} mL`, t('coef.chart')]} />
+                <Tooltip cursor={{ fill: 'var(--rule)' }} formatter={tooltipFormatter(t('coef.chart'), (n) => `${num(loc, n, 3)} mL`)} />
                 <Bar dataKey="ml" radius={[2, 2, 0, 0]}>
                   {chart.map((_, i) => <Cell key={i} fill={INKS[i % INKS.length]} />)}
                 </Bar>

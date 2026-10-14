@@ -6,7 +6,7 @@ import { SceneCanvas } from '../scene/SceneCanvas';
 import { useNarrow, useReducedMotion } from '../state/useMedia';
 import { fetchProviders } from '../state/coefficients';
 import { compareStore, runCompare, useCompare, type CompareLane } from '../state/compare';
-import { fmtBytes, fmtMl, fmtWh, num, type Loc } from '../state/format';
+import { fmtBytes, fmtMl, fmtWh, num, tooltipFormatter, type Loc } from '../state/format';
 import { withRange } from '../../../shared/calc';
 
 const INKS = ['var(--blue)', 'var(--pink)', 'var(--yellow)'];
@@ -94,7 +94,7 @@ function MiniBar({ title, unit, data, dataKey, format }: {
             <YAxis width={46} tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
             <Tooltip
               cursor={{ fill: 'var(--rule)' }}
-              formatter={(v: number) => [`${format(Number(v))} ${unit}`, title]}
+              formatter={tooltipFormatter(title, (n) => `${format(n)} ${unit}`)}
             />
             <Bar dataKey={dataKey} radius={[2, 2, 0, 0]}>
               {data.map((_, i) => <Cell key={i} fill={INKS[i % INKS.length]} />)}

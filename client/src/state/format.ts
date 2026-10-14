@@ -43,3 +43,16 @@ export function fmtDateTime(lang: Loc, ts: number): string {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit',
   });
 }
+/**
+ * Recharts 3 memperluas tipe `formatter` Tooltip: nilainya bisa
+ * number | string | array, DAN bisa undefined. Formatter lama
+ * `(v: number) => [string, string]` tidak lagi valid. Semua grafik memakai
+ * helper ini supaya penyesuaian tipe cukup di satu tempat, dan nilai
+ * non-number diubah jadi 0 supaya tidak pernah menampilkan "NaN".
+ */
+export function tooltipFormatter(label: string, render: (n: number) => string) {
+  return (v: unknown): [string, string] => {
+    const n = typeof v === 'number' ? v : Number(Array.isArray(v) ? v[0] : v);
+    return [render(Number.isFinite(n) ? n : 0), label];
+  };
+}

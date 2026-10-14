@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import type { HistoryRow } from '../../../shared/types';
 import { useI18n } from '../i18n';
 import { fetchProviders } from '../state/coefficients';
-import { fmtBytes, fmtMl, fmtWh, num, type Loc } from '../state/format';
+import { fmtBytes, fmtMl, fmtWh, num, tooltipFormatter, type Loc } from '../state/format';
 import { aggregate, type Period } from '../state/aggregate';
 
 export function Dashboard() {
@@ -126,7 +126,7 @@ export function Dashboard() {
                 <CartesianGrid stroke="var(--rule)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
                 <YAxis width={46} tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
-                <Tooltip cursor={{ fill: 'var(--rule)' }} formatter={(v: number) => [fmtBytes(loc, Number(v)), t('dash.col.data')]} />
+                <Tooltip cursor={{ fill: 'var(--rule)' }} formatter={tooltipFormatter(t('dash.col.data'), (n) => fmtBytes(loc, n))} />
                 <Bar dataKey="bytes" fill="var(--yellow)" stroke="var(--ink)" strokeWidth={1} radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
