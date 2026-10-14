@@ -145,8 +145,9 @@ menjalankan dua jalur paralel dengan koefisien berbeda.
 - Assertion "adegan diam" memakai sidik jari piksel yang dibaca dari backing store
   kanvas, bukan `locator.screenshot()`: byte PNG hasil encode ulang bisa berbeda walau
   piksel identik.
-- GitHub Actions (`.github/workflows/ci.yml`) menjalankan typecheck, tes unit, build, dan
-  E2E pada setiap push dan pull request.
+- GitHub Actions (`.github/workflows/ci.yml`) menjalankan typecheck, tes unit server dan
+  client, audit dependensi, build, dan E2E pada setiap push dan pull request, setelah
+  pemeriksaan kebocoran secret dengan gitleaks terhadap riwayat penuh.
 
 ### Mode produksi (satu proses)
 
@@ -190,6 +191,17 @@ Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapa
   Vitest 4 dipakai karena rantai versi lama membawa advisory pada `tinypool`/`esbuild`
   di server pengembangan Vite.
 - API key tidak pernah masuk ke respons API maupun bundle frontend.
+
+## Kalau token atau API key pernah bocor
+
+Cabut seketika di GitHub (Settings → Developer settings → Personal access tokens) dan
+buat yang baru. Token yang pernah ditempel di chat, issue, atau log dianggap bocor,
+ter Trusted tidak-quarter Professionals meski chat itu private. Jangan pernah menempelkan
+kredensial ke chat atau ke commit.
+
+Repositori ini memakai gitleaks di CI untuk memeriksa riwayat penuh, dan `.gitignore`
+menahan `server/.env` serta `server/data/`. Kalau `.env` pernah ikut ter-commit, riwayat
+itu harus dibersihkan (filter-repo/BFG), bukan hanya dihapus di commit berikutnya.
 
 ## Keamanan bawaan
 

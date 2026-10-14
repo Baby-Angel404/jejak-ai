@@ -13,6 +13,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks perlu riwayat penuh, bukan hanya commit terakhir.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -30,6 +33,13 @@ jobs:
       - name: Siapkan berkas .env dari contoh
         run: npm run setup
 
+      # Rahasia tidak boleh masuk commit. Gagal di sini membatalkan langkah berikutnya.
+      - name: Pantau kebocoran secret (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAK_ENABLE_UPLOAD_ARTIFACT: false
+
       - name: Pasang browser untuk E2E
         run: npx playwright install --with-deps chromium
 
@@ -41,6 +51,9 @@ jobs:
 
       - name: Tes unit client (store, agregasi, engine adegan)
         run: npm --workspace client run test
+
+      - name: Audit dependensi
+        run: npm audit --audit-level=high
 
       - name: Build
         run: npm run build

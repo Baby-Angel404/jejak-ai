@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Salin .env.example -> .env kalau belum ada. API key hanya tinggal di server/.env.
+// Menyalakan .env dari contoh dan menyiapkan folder data.
+// Catatan: berkas .gitignore milik repositori dan TIDAK ditulis di sini —
+// menulisnya dari skrip akan menimpa entri yang disunting tangan.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,11 +17,3 @@ if (fs.existsSync(dst)) {
   console.log('server/.env dibuat dari .env.example. Isi key provider yang kamu pakai di file itu.');
 }
 fs.mkdirSync(path.join(root, 'server/data'), { recursive: true });
-fs.writeFileSync(path.join(root, '.gitignore'), `node_modules/
-dist/
-server/.env
-server/data/
-*.local
-.DS_Store
-`);
-console.log('.gitignore ditulis.');
