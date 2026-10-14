@@ -1,6 +1,10 @@
+[![CI](https://github.com/Baby-Angel404/jejak-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Baby-Angel404/jejak-ai/actions/workflows/ci.yml)
+
 # Jejak AI
 
 **"Satu prompt, berapa air?"**
+
+![Adegan dan struk](docs/screenshot-adegan.png)
 
 Jejak AI mengukur dan menganimasikan jejak **air, listrik, dan data** setiap kali kamu
 mengirim prompt ke provider AI, lalu menampilkannya sebagai satu adegan berpenampang:
@@ -191,6 +195,20 @@ Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapa
   Vitest 4 dipakai karena rantai versi lama membawa advisory pada `tinypool`/`esbuild`
   di server pengembangan Vite.
 - API key tidak pernah masuk ke respons API maupun bundle frontend.
+
+## Menjalankan dari clone
+
+Clone lalu jalankan, tanpa langkah tambahan:
+
+```bash
+git clone git@github.com:Baby-Angel404/jejak-ai.git
+cd jejak-ai
+npm ci && npm run setup && npm run build
+npm start                     # http://localhost:8787
+```
+
+Sudah diuji dari clone bersih di mesin lain: `npm ci` → 0 kerentanan, build berhasil,
+server melayani aplikasi di satu origin, dan simulasi lokal berjalan tanpa key.
 
 ## Menerbitkan ke GitHub
 
