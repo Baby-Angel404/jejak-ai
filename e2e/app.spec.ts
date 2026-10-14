@@ -60,6 +60,11 @@ test.describe('halaman adegan', () => {
     await page.goto('/');
     await expect(page.locator('h1')).toHaveText('Satu prompt, berapa air?');
 
+    // Tunggu font siap dulu: pergantian font mengubah layout, dan layout yang bergeser
+    // mengubah lebar kanvas sehingga adegan digambar ulang meski tidak ada aktivitas.
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(500);
+
     const awal = await sidikJariKanvas(page);
     await page.waitForTimeout(1200);
     expect(await sidikJariKanvas(page), 'adegan harus diam sejak awal').toBe(awal);
@@ -213,11 +218,11 @@ test.describe('dasbor dan ekspor', () => {
       VALUES (@ts,@provider,@model,@tokens_in,@tokens_out,@tokens_estimated,@bytes,@wh,@ml)`);
     const now = Date.now();
     const hari = 24 * 3600 * 1000;
-    for (const [i, provider] of ['openai', 'anthropic', 'openai'].entries()) {
+    for (const [i, provider] of ['mock', 'mock-lambat', 'mock'].entries()) {
       ins.run({
         ts: now - i * hari,
         provider,
-        model: provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-5-5',
+        model: provider === 'mock' ? 'mock-model-1' : 'mock-model-2',
         tokens_in: 20, tokens_out: 100 + i * 50, tokens_estimated: i === 2 ? 1 : 0,
         bytes: 4000 + i * 500, wh: 0.07 + i * 0.01, ml: 0.12 + i * 0.05,
       });
@@ -240,16 +245,16 @@ test.describe('dasbor dan ekspor', () => {
 
     await expect(page.locator('table.data caption')).toHaveCount(1);
     await expect(page.locator('table.data tbody tr')).toHaveCount(3);
-    await expect(page.locator('table.data tbody tr').first()).toContainText(/gpt-4o|claude/, { timeout: 10_000 });
+    await expect(page.locator('table.data tbody tr').first()).toContainText(/mock-model/, { timeout: 10_000 });
     await expect(page.locator('.chart-box .recharts-surface').first()).toBeVisible();
   });
 
   test('filter provider mempersempit tabel', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Dasbor', exact: true }).click();
-    await page.selectOption('#dash-provider', 'anthropic');
+    await page.selectOption('#dash-provider', 'mock-lambat');
     await expect(page.locator('table.data tbody tr')).toHaveCount(1, { timeout: 10_000 });
-    await expect(page.locator('table.data tbody tr')).toContainText('claude');
+    await expect(page.locator('table.data tbody tr')).toContainText('mock-model-2');
   });
 
   test('ekspor CSV dan JSON konsisten dengan riwayat', async ({ request }) => {
@@ -257,7 +262,7 @@ test.describe('dasbor dan ekspor', () => {
     const baris = csv.trim().split('\n');
     expect(baris[0]).toBe('ts_iso,provider,model,tokens_in,tokens_out,tokens_estimated,bytes,wh_est,ml_est');
     expect(baris).toHaveLength(4);                          // header + 3 baris
-    expect(baris.some(b => b.includes('anthropic'))).toBe(true);
+    expect(baris.some(b => b.includes('mock-lambat'))).toBe(true);
 
     const json = await (await request.get('/api/export.json')).json();
     expect(json.rows).toHaveLength(3);

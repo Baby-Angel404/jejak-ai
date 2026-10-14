@@ -1,0 +1,29 @@
+{
+  "_catatan": "Koefisien khusus E2E: dua provider yang menunjuk mock upstream lokal, jadi jalur 'mode nyata' dan mode Bandingkan bisa diuji tanpa API key sungguhan.",
+  "mock": {
+    "name": "Mock lokal",
+    "kind": "openai-compatible",
+    "baseURL": "http://127.0.0.1:9999/v1",
+    "keyEnv": "MOCK_API_KEY",
+    "model": "mock-model-1",
+    "e_in": 0.05,
+    "e_out": 0.55,
+    "pue": 1.2,
+    "wue": 1.8,
+    "sumber": "koefisien tes E2E",
+    "tahun": 2026
+  },
+  "mock-lambat": {
+    "name": "Mock lambat",
+    "kind": "openai-compatible",
+    "baseURL": "http://127.0.0.1:9999/v1",
+    "keyEnv": "MOCK_LAMBAT_KEY",
+    "model": "mock-model-2",
+    "e_in": 0.06,
+    "e_out": 0.95,
+    "pue": 1.4,
+    "wue": 2.4,
+    "sumber": "koefisien tes E2E",
+    "tahun": 2026
+  }
+}
