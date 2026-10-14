@@ -249,6 +249,28 @@ test.describe('dasbor dan ekspor', () => {
     await expect(page.locator('.chart-box .recharts-surface').first()).toBeVisible();
   });
 
+  test('tooltip grafik tren menampilkan angka rapi, bukan mengapung mentah', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Dasbor', exact: true }).click();
+    const surface = page.locator('.chart-box .recharts-surface').first();
+    await surface.scrollIntoViewIfNeeded();
+    await expect(surface).toBeVisible({ timeout: 10_000 });
+
+    // Arahkan kursor ke tengah area plot. Posisi y=0.5 sengaja: di bawah area
+    // plot (y~0.9) Recharts memang menyembunyikan tooltip, jadi tes tidak boleh
+    const b = (await surface.boundingBox())!;
+    await page.mouse.move(b.x + b.width * 0.45, b.y + b.height * 0.5);
+
+    const tip = page.locator('.recharts-tooltip-wrapper .tip');
+    await expect(tip).toBeVisible({ timeout: 5_000 });
+    const teks = (await tip.innerText()).replace(/\s+/g, ' ').trim();
+    expect(teks).toMatch(/mL/);
+    expect(teks).toMatch(/Wh/);
+    // Angka harus lewat formatter locale, bukan float mentah Recharts.
+    expect(teks).not.toMatch(/\d+\.\d{6,}/);
+    expect(teks).not.toContain('NaN');
+  });
+
   test('filter provider mempersempit tabel', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Dasbor', exact: true }).click();

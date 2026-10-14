@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import type { HistoryRow } from '../../../shared/types';
 import { useI18n } from '../i18n';
 import { fetchProviders } from '../state/coefficients';
@@ -112,7 +112,21 @@ export function Dashboard() {
                 <CartesianGrid stroke="var(--rule)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
                 <YAxis width={46} tick={{ fontSize: 11, fill: 'currentColor' }} tickLine={false} />
-                <Tooltip cursor={{ stroke: 'var(--rule-strong)' }} />
+                <Tooltip
+                  cursor={{ stroke: 'var(--rule-strong)' }}
+                  content={({ active, payload, label }: TooltipContentProps<number, string>) => {
+                    if (!active || !payload?.length) return null;
+                    const ml = Number(payload.find((e) => String(e.dataKey) === 'ml')?.value ?? 0);
+                    const wh = Number(payload.find((e) => String(e.dataKey) === 'wh')?.value ?? 0);
+                    return (
+                      <div className="tip">
+                        <strong>{label}</strong>
+                        <span>{t('dash.col.water')}: {num(loc, ml, 3)} mL</span>
+                        <span>{t('dash.col.electric')}: {num(loc, wh, 4)} Wh</span>
+                      </div>
+                    );
+                  }}
+                />
                 <Line type="monotone" dataKey="ml" stroke="var(--blue)" strokeWidth={2} dot={{ r: 3 }} name={t('dash.col.water')} />
                 <Line type="monotone" dataKey="wh" stroke="var(--pink)" strokeWidth={2} dot={{ r: 3 }} name={t('dash.col.electric')} />
               </LineChart>

@@ -298,6 +298,31 @@ footer.site {
   color: var(--ink-soft);
 }
 
+/* Tooltip kustom pada grafik tren (dua seri: air dan listrik).
+   Recharts hanya memberi wrapper positioning; isi kita yang menentukan
+   tampilan, jadi gaya ini wajib ada agar angka terbaca di terang/gelap. */
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tip strong {
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
 .stat-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

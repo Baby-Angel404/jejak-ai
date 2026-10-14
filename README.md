@@ -199,6 +199,7 @@ Express tetap diikat ke `127.0.0.1` supaya hanya reverse proxy yang bisa mencapa
 | Vite / Vitest | 6 / 5 | **Vite ditahan di 6**: Vite 8 memakai bundler rolldown yang butuh binding native, dan `npm ci` di Linux tidak memasang binding itu (bug optional-dependency npm) — build akan gagal di mesin lain dan di CI. **TypeScript 7 dan Vitest 5 sudah dipakai**; TS 7 menuntut deklarasi tipe untuk import CSS,UTTON itu ditangani `client/src/vite-env.d.ts`. |
 | @playwright/test | 1.63.0 (eksak) | Dipin tanpa `^` supaya browser yang dipakai lokal dan di CI sama (chromium-1243). |
 | React / Recharts | 19 / 3 | Sudah dimigrasi. Recharts 3 memperluas tipe `formatter` Tooltip (nilai bisa array atau `undefined`), jadi ketiga grafik memakai helper `tooltipFormatter` di `client/src/state/format.ts`. |
+| Tooltip grafik tren | isi kustom | Angka air/listrik diformat locale (`0,170 mL`), bukan float mentah Recharts (`0.16999999999999998`). Diuji E2E di terang dan gelap. |
 | @vitejs/plugin-react | 4.7 | Ditahan: versi 6 mensyaratkan Vite 8, yang tidak bisa dipakai (lihat baris Vite). |
 
 Dependabot hanya menaikkan minor/patch; alasan setiap penahanan ada di
