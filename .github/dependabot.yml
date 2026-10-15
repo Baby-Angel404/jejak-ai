@@ -27,17 +27,26 @@ updates:
           - 'react-dom'
           - 'recharts'
           - '@vitejs/plugin-react'
-    # Lonjakan mayor ditolak otomatis. Alasannya diuji di mesin ini, bukan tebakan:
-    #   express 4->5                     -> sudah dimigrasi (lihat riwayat git)
-    #   better-sqlite3 11->13            -> mensyaratkan Node >= 22; di Node 20
-    #                                       binary prebuilt segfault saat DB dibuka
-    #   typescript 7, vitest 5 -> sudah dimigrasi (lihat riwayat git)
-    #   vite 6->8 -> DITAHAN: bundler rolldown butuh binding native yang tidak
-    #                  dipasang npm ci di Linux, jadi build rusak di mesin lain
-    #   (seluruh muatanMayor sudah dimigrasi: lihat riwayat git)
-    #   react 18->19, recharts 2->3            -> build dan tes client gagal
-    # Upgrade mayor adalah pekerjaan migrasi tersendiri, bukan-PR otomatis.
-    # Kalau salah satu sudah selesai di tangan, hapus baris ignore-nya.
+    # Lonjakan mayor ditolak otomatis. Yang TIDAK diabaikan tetap naik
+    # (minor/patch), dan advisory keamanan tetap membuka PR seperti biasa.
+    #
+    # Status per muatan mayor, semuanya sudah diuji di mesin ini:
+    #   express 4->5                -> SUDAH dimigrasi
+    #   dotenv 16->18               -> SUDAH dimigrasi
+    #   typescript 5->7, vitest 4->5-> SUDAH dimigrasi (TS7 butuh deklarasi
+    #                                   import CSS di client/src/vite-env.d.ts)
+    #   react 18->19, recharts 2->3 -> SUDAH dimigrasi (helper tooltipFormatter)
+    #
+    # Yang masih ditahan, dengan alasan terukur:
+    #   better-sqlite3 11->13 -> mensyaratkan Node >= 22; binary prebuilt segfault
+    #                            saat database dibuka di Node 20 (direproduksi lokal)
+    #   vite 6->8            -> Vite 8 memakai bundler rolldown yang butuh binding
+    #                            native, dan `npm ci` di Linux tidak memasangnya, jadi
+    #                            build rusak di mesin lain dan di CI
+    #   @vitejs/plugin-react 4->6 -> mensyaratkan Vite 8, jadi terikat pada vite di atas
+    #
+    # Saat salah satu naik, hapus baris "DITAHAN" di atas. Alasan lengkap
+    # ada di bagian tabel versi README, supaya hanya ada satu sumber kebenaran.
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
@@ -47,8 +56,9 @@ updates:
     schedule:
       interval: monthly
     ignore:
-      # Lonjakan mayor actions (v4 -> v7) dihentikan agar datangnya satu per satu;
-      # PR-nya sendiri sudah diuji dan hijau, jadi bisa levantamento manual.
+      # Lonjakan mayor actions ditahan agar datangnya satu per satu, bukan lima
+      # sekaligus. PR-nya sendiri sudah pernah diuji lokal dan hijau, jadi siap
+      # di-merge manual kapan diinginkan.
       - dependency-name: 'actions/checkout'
         update-types: ['version-update:semver-major']
       - dependency-name: 'actions/setup-node'
